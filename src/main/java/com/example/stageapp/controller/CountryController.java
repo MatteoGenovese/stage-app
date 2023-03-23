@@ -8,15 +8,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
 @RestController
 @RequestMapping("/countries")
 public class CountryController {
-
-
-	private RestCountriesClient restCountriesClient;
+	private final RestCountriesClient restCountriesClient;
 
 	public CountryController(RestCountriesClient restCountriesClient) {
 
@@ -28,7 +27,7 @@ public class CountryController {
 		try {
 			return restCountriesClient.getCountryInfo(name);
 		} catch (Exception e) {
-			return null;
+			return new ArrayList<>();
 		}
 	}
 

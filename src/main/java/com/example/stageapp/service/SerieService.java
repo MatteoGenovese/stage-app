@@ -23,7 +23,7 @@ import java.util.List;
 @Slf4j
 public class SerieService extends VideoService<Serie> {
 
-	private final VideoRepository repository;
+	private final VideoRepository<Serie, String> repository;
 
 	public SerieService(@Autowired MongoTemplate mongoTemplate,
 						@Autowired SerieRepository serieRepository) {

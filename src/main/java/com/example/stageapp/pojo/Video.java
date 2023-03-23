@@ -40,9 +40,9 @@ public abstract class Video {
 	@NotNull
 	private List<String> genreList;
 
-	public Video() {
+	protected Video() {
 	}
-	public Video(String id, String title, String year, String rated, String released, List<String> genreList) {
+	protected Video(String id, String title, String year, String rated, String released, List<String> genreList) {
 		this.id = id;
 		this.title = title;
 		this.year = year;
@@ -68,17 +68,35 @@ public abstract class Video {
 						video.getYear(),
 						video.getRated(),
 						video.getReleased()))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 	public static VideoDTO convertVideoToVideoDTO(Video video){
-		VideoDTO response = new VideoDTO(
+		return new VideoDTO(
 				video.getTitle(),
 				video.getYear(),
 				video.getRated(),
 				video.getReleased()
 		);
-		return response;
+	}
+
+	public static <E extends Video> VideoDTO convertSerieOrMovieToVideoDTO(E video){
+		return new VideoDTO(
+				video.getTitle(),
+				video.getYear(),
+				video.getRated(),
+				video.getReleased()
+		);
+
+	}
+
+	public static <E extends Video> E convertVideoListToVideo(List<E> videolist){
+		if (videolist.size()==1) {
+			for (E video : videolist) {
+				return video;
+			}
+		}
+		return null;
 	}
 
 	@Override

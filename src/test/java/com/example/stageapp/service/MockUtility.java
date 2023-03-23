@@ -5,6 +5,8 @@ import com.example.stageapp.dto.VideoDTO;
 import com.example.stageapp.pojo.Movie;
 import com.example.stageapp.pojo.Serie;
 import com.example.stageapp.pojo.Video;
+
+
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Query;
 
@@ -105,19 +107,9 @@ public class MockUtility {
 		return Video.convertVideoListToVideoDTOList(returnLoki());
 	}
 
-
-
-
-
-	public static Query getSerieListWithSeasonsGreaterThanQuery() {
-		return new BasicQuery(
-				"{'Seasons': { $gt: " + returnJsonParameters().getSeasons() +" }}"
-		);
-	}
-
 	public static JsonParametersDTO returnJsonParameters() {
 		return new JsonParametersDTO(
-				null, null, "0", "15", null, null, 3);
+				null, null, "0", "15", "1", null, 3);
 	}
 
 	public static JsonParametersDTO returnJsonParametersWithChars() {

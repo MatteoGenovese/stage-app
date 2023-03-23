@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 //restringo i limiti del mio generic alla superclasse Video, se volessi restringere i limiti sia
@@ -28,12 +29,7 @@ public abstract class VideoService<E extends Video> implements Videoable<E> {
 
 	protected MongoTemplate mongoTemplate;
 
-//	public VideoService(MongoTemplate mongoTemplate){
-//		this.mongoTemplate=mongoTemplate;
-//	}
-
-
-	public abstract VideoRepository getRepository();
+	public abstract VideoRepository<E, String> getRepository();
 
 	public List<VideoDTO> videoListContainsVideos(Query query,
 												  PageRequest pageRequest,
@@ -47,7 +43,7 @@ public abstract class VideoService<E extends Video> implements Videoable<E> {
 
 		if (videoList.isEmpty()) {
 			log.info("page doesn't contain movies");
-			return null;
+			return new ArrayList<>();
 		} else {
 			log.info("page contains movies");
 			return Video.convertVideoListToVideoDTOList(
@@ -77,12 +73,10 @@ public abstract class VideoService<E extends Video> implements Videoable<E> {
 
 			}catch (Exception e)
 			{
-				e.printStackTrace();
 				return PageRequest.of(0,10);
 			}
 		}
 		return PageRequest.of(0,10);
-
 	}
 	public static boolean accettableValuesOfJsonParameters(JsonParametersDTO jsonParameters){
 		if(Integer.parseInt(jsonParameters.getPage())>=0 &&
@@ -91,12 +85,14 @@ public abstract class VideoService<E extends Video> implements Videoable<E> {
 				Integer.parseInt(jsonParameters.getNumberOfElements())<Integer.MAX_VALUE){
 			return true;
 		}
-		else
 			return false;
 	}
 
 	public VideoDTO getVideo(String id, Class<E> classType) {
 		Query query = new BasicQuery("{'_id': { $eq: \"" + id + "\" }}");
+		//response test e integration test
+		//bulk operations
+		//annotation query
 		try {
 			log.info("video found");
 			return Video.convertVideoToVideoDTO(mongoTemplate.findOne(query, classType));
@@ -113,15 +109,17 @@ public abstract class VideoService<E extends Video> implements Videoable<E> {
 		log.info("video saved in db");
 	}
 
-	public void deleteVideoById(String id, Class<E> classType) {
+	public void deleteVideoById(String id, Class<E> classType) throws Exception {
 
 		Query query = new BasicQuery("{'_id': { $eq: \"" + id + "\" }}");
 
 		if (getRepository().findById(id).isPresent()) {
 			mongoTemplate.remove(query, classType);
 			log.info("movie found and deleted");
-		} else
+		} else {
 			log.info("no movie found");
+			throw new Exception("Not found");
+		}
 	}
 
 	public List<VideoDTO> getVideoListSearchedByTitle(JsonParametersDTO jsonParameters, Class<E> classType) throws Exception {
@@ -131,14 +129,6 @@ public abstract class VideoService<E extends Video> implements Videoable<E> {
 		);
 		PageRequest pageRequest = getPageRequest(jsonParameters);
 		return videoListContainsVideos(query, pageRequest, classType);
-
-//		in alternativa all' autowired di MongoTemplate, posso dichiarare una variabile che utilizzando il costruttore di MongoTemplate
-//		mi permette di stabilire l'url di collegamento al db, e il database al suo interno da utilizzare
-//		MongoTemplate mongoOps=new MongoTemplate(MongoClients.create("mongodb://localhost:27017"), "db_movie" );
-
-//		Query query = new Query();
-//		query.addCriteria(Criteria.where("Title").regex(Pattern.compile(jsonParameters.getTitle(), Pattern.CASE_INSENSITIVE)));
-//		List<E> moviesFromDbFilteredByTitleDAO=mongoTemplate.find(query.with(pageRequest),classType);
 
 	}
 
@@ -152,35 +142,10 @@ public abstract class VideoService<E extends Video> implements Videoable<E> {
 
 		return videoListContainsVideos(query, pageRequest, classType);
 
-//		repository di solito page
-//		service quello che si desidera
-//		Page<E> moviesFromDbFilteredByTitle  = getRepository().findByTitleIgnoreCaseContainingAndGenreListIgnoreCaseContaining(
-//						jsonParameters.getTitle().toLowerCase(),
-//						jsonParameters.getGenre().toLowerCase(),
-//						pageRequest
-//		);
-//		List<E> moviesFromDbFilteredByTitleDAO = moviesFromDbFilteredByTitle.stream().toList();
-	}
-
-	public void addAllMongoDBKeys() {
-//		log.info("adding MongoDB keys");
-//		boolean addedNewKeys=false;
-//
-//		for (E video : getRepository().findAll()){
-//			if ( video.getId()==null)
-//			{
-//				video.setId(new ObjectId().toString());
-//				getRepository().save( video );
-//				addedNewKeys=true;
-//			}
-//		}
-//		if(addedNewKeys){
-//			log.info("added new MongoDB keys");
-//		}
-//		else {
-//			log.info("no new MongoDB keys added");
-//		}
+//		repository di solito page, service quello che si desidera
 
 	}
+
+
 
 }

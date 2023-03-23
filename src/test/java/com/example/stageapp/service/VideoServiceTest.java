@@ -1,18 +1,23 @@
 package com.example.stageapp.service;
 
 import com.example.stageapp.dto.JsonParametersDTO;
+import com.example.stageapp.dto.VideoDTO;
 import com.example.stageapp.pojo.Movie;
 import com.example.stageapp.pojo.Serie;
+import com.example.stageapp.pojo.Video;
 import com.example.stageapp.repository.MovieRepository;
 import com.example.stageapp.repository.SerieRepository;
-import org.junit.Assert;
+
+import com.mongodb.client.result.DeleteResult;
+import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -20,11 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-
-import static com.googlecode.catchexception.CatchException.catchException;
-import static com.googlecode.catchexception.CatchException.caughtException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -33,15 +34,15 @@ import static org.mockito.Mockito.*;
 public class VideoServiceTest {
 
 	@Mock
-	private SerieRepository serieRepository;
+	SerieRepository serieRepository;
 	@Mock
-	private MovieRepository movieRepository;
+	MovieRepository movieRepository;
 	@Mock
-	private MongoTemplate mongoTemplate;
+	MongoTemplate mongoTemplate;
 
 
-	private VideoService movieServiceUnderTest;
-	private VideoService serieServiceUnderTest;
+	VideoService<Movie> movieServiceUnderTest;
+	VideoService<Serie> serieServiceUnderTest;
 
 	@Before
 	public void setUp(){
@@ -60,7 +61,8 @@ public class VideoServiceTest {
 	}
 
 	@Test
-	public void testVideoListContainsVideos() throws Exception {
+	@SneakyThrows
+	public void testVideoListContainsVideos(){
 		//given
 		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
 		PageRequest pageRequest=movieServiceUnderTest.getPageRequest(jsonParameters);
@@ -84,7 +86,8 @@ public class VideoServiceTest {
 	}
 
 	@Test
-	public void getAllVideoListTest_returnVideoList() throws Exception {
+	@SneakyThrows
+	public void getAllVideoListTest_returnVideoList() {
 		//given
 		Query query = new BasicQuery("{}");
 		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
@@ -103,8 +106,9 @@ public class VideoServiceTest {
 		serieServiceUnderTest.getAllVideoList(jsonParameters,Serie.class);
 
 		//then
-		Assert.assertTrue(serieServiceUnderTest.getAllVideoList(jsonParameters,Serie.class).equals(MockUtility.returnSerieListDTO()));
-		Assert.assertTrue(movieServiceUnderTest.getAllVideoList(jsonParameters,Movie.class).equals(MockUtility.returnMovieListDTO()));
+
+		assertThat(serieServiceUnderTest.getAllVideoList(jsonParameters,Serie.class).equals(MockUtility.returnSerieListDTO()));
+		assertThat(movieServiceUnderTest.getAllVideoList(jsonParameters,Movie.class).equals(MockUtility.returnMovieListDTO()));
 
 		assertEquals(
 				expected,
@@ -114,7 +118,8 @@ public class VideoServiceTest {
 	}
 
 	@Test
-	public void pageRequest_isValid() throws Exception {
+	@SneakyThrows
+	public void pageRequest_isValid() {
 		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
 		PageRequest expected = PageRequest.of(0, 15);
 		assertEquals(
@@ -123,19 +128,21 @@ public class VideoServiceTest {
 		);
 	}
 
-	@Test(expected = NumberFormatException.class)
+	@Test
+	@SneakyThrows
 	public void pageRequest_containsChars() throws Exception{
 		//given
-		JsonParametersDTO jsonParameters = MockUtility.returnJsonParametersWithChars();
+		JsonParametersDTO jsonParametersWithChars = MockUtility.returnJsonParametersWithChars();
+		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
 		//when
 
 		//then
-		movieServiceUnderTest.getPageRequest(jsonParameters);
-		assertThat(movieServiceUnderTest.getPageRequest(jsonParameters)).isEqualTo(PageRequest.of(0,10));
-		assertThrows(NumberFormatException.class,()->{},"error handled");
+		Exception thrown = assertThrows(NumberFormatException.class, ()->  movieServiceUnderTest.getPageRequest(jsonParametersWithChars) ,"Expected PageRequest.of(0,10) to throw, but it didn' t");
+		assertThat(thrown.getMessage().contentEquals(NumberFormatException.class.toString()));
 	}
 
 	@Test
+	@SneakyThrows
 	public void pageRequest_outOfBoundaries() throws Exception{
 		//given
 		JsonParametersDTO jsonParameters = MockUtility.returnJsonParametersOutOfBoundaries();
@@ -148,17 +155,32 @@ public class VideoServiceTest {
 
 
 	@Test
+	@SneakyThrows
 	public void getVideoTest() {
 		//given
-		String id="1";
-		Query query = new BasicQuery("{'_id': { $eq: \"" + id + "\" }}");
+		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
+		PageRequest pageRequest = movieServiceUnderTest.getPageRequest(jsonParameters);
+		Query query = new BasicQuery("{'_id': { $eq: \"" + jsonParameters.getId() + "\" }}");
 		//when
-		serieServiceUnderTest.getVideo("1", Movie.class);
+		when(mongoTemplate.findOne(any(),eq(Movie.class))).thenReturn(
+				Video.convertVideoListToVideo(
+					MockUtility.returnMovieList().stream().filter(
+							video->video.getId()==jsonParameters.getId()
+					).toList()
+				)
+		);
 		//then
-		verify(mongoTemplate).findOne(query,Movie.class);
+		Assertions.assertEquals(
+				Video.convertVideoToVideoDTO(Video.convertVideoListToVideo(
+						MockUtility.returnMovieList().stream().filter(
+								video->video.getId()==jsonParameters.getId()).toList()
+				)),
+				movieServiceUnderTest.getVideo(jsonParameters.getId(),Movie.class)
+		);
 	}
 
 	@Test
+	@SneakyThrows
 	public void saveVideoTest() {
 		//given
 		Serie serie=MockUtility.getOneSerie();
@@ -171,29 +193,29 @@ public class VideoServiceTest {
 	}
 
 	@Test
+	@SneakyThrows
 	@Disabled
 	public void deleteVideoByIdTest() {
-//		//given
-//		Movie movie=MockUtility.getOneMovie();
-//		Serie serie=MockUtility.getOneSerie();
-//
-//		String movieId=movie.getId();
-//		String serieId=serie.getId();
-//
-//		Query movieQuery = new BasicQuery("{'_id': { $eq: \"" + movieId + "\" }}");
-//		Query serieQuery = new BasicQuery("{'_id': { $eq: \"" + serieId + "\" }}");
-//
-//		movieServiceUnderTest.deleteVideoById(movieId,Movie.class);
-//		serieServiceUnderTest.deleteVideoById(serieId,Serie.class);
-//		//when
-//
-//		//then
-//		verify(mongoTemplate).remove(movieQuery, Movie.class);
-//		verify(mongoTemplate).remove(serieQuery,Serie.class);
+		//given
+		Movie movie=MockUtility.getOneMovie();
+		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
+		String movieId=movie.getId();
+		Query movieQuery = new BasicQuery("{'_id': { $eq: \"" + jsonParameters.getId() + "\" }}");
+
+
+
+		movieServiceUnderTest.deleteVideoById(movieId,Movie.class);
+		//when
+
+		when(mongoTemplate.remove(any(),Movie.class)).thenReturn(DeleteResult.acknowledged(1));
+
+		//then
+		verify(mongoTemplate).remove(movieQuery, Movie.class);
 	}
 
 	@Test
-	public void getVideoListSearchedByTitleTest() throws Exception {
+	@SneakyThrows
+	public void getVideoListSearchedByTitleTest() {
 		//given
 		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
 		PageRequest pageRequest = movieServiceUnderTest.getPageRequest(jsonParameters);
@@ -215,7 +237,8 @@ public class VideoServiceTest {
 	}
 
 	@Test
-	public void getVideoListSearchedByTitleAndGenreTest() throws Exception {
+	@SneakyThrows
+	public void getVideoListSearchedByTitleAndGenreTest() {
 		//given
 		JsonParametersDTO jsonParameters = MockUtility.returnJsonParameters();
 		PageRequest pageRequest = movieServiceUnderTest.getPageRequest(jsonParameters);
@@ -242,6 +265,7 @@ public class VideoServiceTest {
 
 
 	@Test
+	@SneakyThrows
 	public void addAllMongoDBKeysTest() {
 		//given
 

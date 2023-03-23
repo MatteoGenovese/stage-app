@@ -6,11 +6,9 @@ package com.example.stageapp.controller;
 import com.example.stageapp.dto.JsonParametersDTO;
 import com.example.stageapp.dto.VideoDTO;
 import com.example.stageapp.pojo.Movie;
-import com.example.stageapp.service.MovieService;
 import com.example.stageapp.service.Videoable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,24 +20,9 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @CrossOrigin("*")
 public class MovieController {
 
-
-
-//    @Autowired
-//    private VideoService videoService;
-
-
 	@Qualifier("movieService")
 	@Autowired
-	private Videoable service;
-
-//    public MovieController(MovieService movieService) {
-//        super();
-//        this.movieService = movieService;
-//    }
-
-	public void saluta(){
-		System.out.println("Sono il controller");
-	}
+	private Videoable<Movie> service;
 
 	@PostMapping(value ="", consumes = APPLICATION_JSON_VALUE)
 	public List<VideoDTO> findMovies(@RequestBody JsonParametersDTO jsonParameters) throws Exception {
@@ -57,7 +40,7 @@ public class MovieController {
 	}
 
 	@PostMapping("/delete")
-	public void deleteById(@RequestBody String id){
+	public void deleteById(@RequestBody String id) throws Exception {
 		service.deleteVideoById(id, Movie.class);
 	}
 

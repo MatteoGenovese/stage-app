@@ -1,17 +1,15 @@
 package com.example.stageapp.pojo;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+
 
 @Document("serie")
 @Setter
