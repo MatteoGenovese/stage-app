@@ -2,17 +2,14 @@ package com.example.stageapp.pojo;
 
 import com.example.stageapp.dto.VideoDTO;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Setter
 @Getter
@@ -52,13 +49,21 @@ public abstract class Video {
 	}
 
 	public String getGenreString(){
+		StringBuilder genreToString = new StringBuilder();
 
-		String genreToString = "";
-		for (String genre: getGenreList()){
-			genreToString+= genre+" ";
+		Iterator<String> iterator = getGenreList().iterator();
+		while (iterator.hasNext()) {
+			String element = iterator.next();
+			if (iterator.hasNext()) {
+				genreToString.append(element);
+				genreToString.append(", ");
+			}
+			else {
+				genreToString.append(element);
+				genreToString.append(".");
+			}
 		}
-
-		return genreToString;
+		return genreToString.toString();
 	}
 
 	public static List<VideoDTO> convertVideoListToVideoDTOList(List<? extends Video> videoList){
@@ -91,12 +96,7 @@ public abstract class Video {
 	}
 
 	public static <E extends Video> E convertVideoListToVideo(List<E> videolist){
-		if (videolist.size()==1) {
-			for (E video : videolist) {
-				return video;
-			}
-		}
-		return null;
+		return videolist.size()==1 ? videolist.get(0): null;
 	}
 
 	@Override
